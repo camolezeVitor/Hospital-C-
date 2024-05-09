@@ -82,13 +82,13 @@ public:
     //Construtores
     Cidade(int codigoDeRegistroDaUltimaCidade) {
         this->nome = "Unknown city...";
-        this->codigo = codigoDeRegistroDaUltimaCidade;
+        this->codigo = codigoDeRegistroDaUltimaCidade + 1;
         this->uf = "??";
     }
     Cidade(int codigoDeRegistroDaUltimaCidade, std::string nome, std::string uf) {
         this->nome = nome;
         this->uf = uf;
-        this->codigo = codigoDeRegistroDaUltimaCidade;
+        this->codigo = codigoDeRegistroDaUltimaCidade + 1;
     }
 
     //Getters
@@ -118,6 +118,70 @@ private:
     int codigo;
     std::string nome;
     std::string uf;
+};
+
+class EspecialidadeMedica {
+public:
+
+    //Construtores
+    EspecialidadeMedica(int ultimaEspecialidadeRegistrada) {
+        this->codigo = ultimaEspecialidadeRegistrada + 1;
+        this->descricao = "Unknown description";
+    }
+    EspecialidadeMedica(int ultimaEspecialidadeRegistrada, std::string descricao) {
+        this->codigo = ultimaEspecialidadeRegistrada + 1;
+        this->descricao = descricao;
+    }
+
+    //Getter
+    std::string getDescricao() {
+        return this->descricao;
+    };
+    int getCodigo() {
+        return this->codigo;
+    }
+
+    //Setter
+    void setDescricao(std::string descricao) {
+        this->descricao = descricao;
+    }
+
+    //Outro
+    void toString() {
+        std::cout << "\n| FICHA ESPECIALIDADE ============================|";
+        std::cout << "\n| descricao :: " << this->descricao;
+    }
+
+private:
+    int codigo;
+    std::string descricao;
+};
+
+class CID {
+public:
+
+    //Construtor
+    CID(std::string codigo, std::string descricao) {
+        this->codigo = codigo;
+        this->descricao = descricao;
+    }
+
+    //Getter
+    std::string getCodigo() {
+        return this->codigo;
+    }
+    std::string getDescricao() {
+        return this->descricao;
+    }
+
+    //Setter
+    void setDescricao(std::string descricao) {
+        this->descricao = descricao;
+    }
+
+private:
+    std::string codigo;
+    std::string descricao;
 };
 
 int main() {
