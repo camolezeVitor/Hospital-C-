@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <vector>
 
 //Classes
 class Medico {
@@ -369,7 +370,33 @@ private:
 };
 //Fim-Classes
 
+void mostrarTelaInicial();
+void mostrarTelaMedico(int);
+void mostrarTelaCidade(int);
+void mostrarTelaEspecialidadeMedica(int);
+void mostrarTelaCID(int);
+void mostrarTelaPaciente(int);
+void mostrarTelaMedicamento(int);
+void mostrarTelaConsulta(int);
+
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+
+    bool programaEstaRodando = true;
+    std::vector<Medico> listaDeMedicos;
+    std::vector<Cidade> listaDeCidades;
+    std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas;
+    std::vector<CID> listaDeCids;
+    std::vector<Paciente> listaDePacientes;
+    std::vector<Medicamento> listaDeMedicamentos;
+    std::vector<Consulta> listaDeConstultas;
+    
+
+
+
+
+    while (programaEstaRodando) {
+
+    }
+
     return 0;
 }
