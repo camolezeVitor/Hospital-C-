@@ -124,6 +124,8 @@ private:
 class EspecialidadeMedica {
 public:
 
+    EspecialidadeMedica() {};
+
     //Construtores
     EspecialidadeMedica(int ultimaEspecialidadeRegistrada) {
         this->codigo = ultimaEspecialidadeRegistrada + 1;
@@ -392,15 +394,19 @@ void mostrarTelaConsulta();
 
 // CADASTRO ====================================================
 CID cadastroCID(std::vector<CID>*);
+EspecialidadeMedica cadastroEspecialidadeMedica(std::vector<EspecialidadeMedica>*);
 
 // LISTAR ======================================================
 void listarCID(std::vector<CID>);
+void listarEspecialidadesMedicas(std::vector<EspecialidadeMedica>);
 
 // BUSCAR ======================================================
 void buscarCID(std::vector<CID>);
+void buscarEspecialidadeMedica(std::vector<EspecialidadeMedica>);
 
 // METODOS SINGULARES ==========================================
 std::optional<CID> metodoBuscarCID(std::string, std::vector<CID>);
+std::optional<EspecialidadeMedica> metodoBuscarEspecialidadeMedica(std::vector<EspecialidadeMedica>);
 
 // GATEWAYS ====================================================
 void cidGateway(std::vector<CID>*);
@@ -581,5 +587,108 @@ void buscarCID(std::vector<CID> listaDeCids) {
         std::cout << "\n |                |  Nao existem registros...                             |";
         std::cout << "\n |________________________________________________________________________|";
     }
+
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
 }
 // C I D =============================================================
+
+// E S P E C I A L I D A D E    M E D I C A ==========================
+
+
+void mostrarTelaEspecialidadeMedica() {
+    system("CLS");
+    std::cout << "\n  ________________________";
+    std::cout << "\n | Especialidades Medicas |_______________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Opcoes     |                                                       |";
+    std::cout << "\n | 1 - Cadastrar  |                                                       |";
+    std::cout << "\n | 2 - Listar     |                                                       |";
+    std::cout << "\n | 3 - Buscar     |                                                       |";
+    std::cout << "\n | 4 - Sair       |                                                       |";
+    std::cout << "\n |________________________________________________________________________|";
+    std::cout << "\n\n [ opcao ] ==> ";
+}
+
+std::optional<EspecialidadeMedica> metodoBuscarEspecialidadeMedica(std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas, int codigo) {
+    int index = 0;
+    while (index < listaDeEspecialidadesMedicas.size() && listaDeEspecialidadesMedicas[index].getCodigo() != codigo) {};
+
+    if (listaDeEspecialidadesMedicas[index].getCodigo() != codigo) {
+        return std::nullopt;
+    }
+
+    return listaDeEspecialidadesMedicas[index];
+}
+
+EspecialidadeMedica cadastroEspecialidadeMedica(std::vector<EspecialidadeMedica> *listaDeEspecialidadesMedicas) {
+    std::string descricao, outSeq;
+
+    system("CLS");
+    std::cout << "\n  ________________________";
+    std::cout << "\n | Especialidades Medicas |_______________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Cadastrar  |                                                       |";
+    std::cout << "\n |================| Qual eh a descricao da especialidade ?                |";
+    std::cout << "\n |                | ==> ";
+    std::getline(std::cin, descricao);
+    std::cout << "\n |                | Cadastro finalizado ...                               |";
+    std::cout << "\n |________________________________________________________________________|";
+
+    listaDeEspecialidadesMedicas->push_back(
+            EspecialidadeMedica(listaDeEspecialidadesMedicas->size(), descricao)
+            );
+
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
+}
+
+void listarEspecialidadesMedicas(std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas) {
+    system("CLS");
+    std::string outSeq;
+
+    if (listaDeEspecialidadesMedicas.size() > 0) {
+        std::cout << "\n  ________________________";
+        std::cout << "\n | Especialidades Medicas |_______________________________________________";
+        std::cout << "\n |========================================================================|";
+        for (EspecialidadeMedica especialidade : listaDeEspecialidadesMedicas) {
+            std::cout << "\n | " << especialidade.getCodigo() << " | " << especialidade.getDescricao();
+        }
+        std::cout << "\n |________________________________________________________________________|";
+    } else {
+        std::cout << "\n  ________________________";
+        std::cout << "\n | Especialidades Medicas |_______________________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |  Nao existem registros                                                 |";
+        std::cout << "\n |________________________________________________________________________|";
+    }
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
+
+}
+
+void buscarEspecialidadeMedica(std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas) {
+    system("CLS");
+    std::string outSeq;
+    int index = 0, codigo;
+
+    std::cout << "\n  _____";
+    std::cout << "\n | CID |__________________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Buscar     |                                                       |";
+    std::cout << "\n |================| Qual eh o codigo da Especialidade ?                   |";
+    std::cout << "\n |                | ==> ";
+    std::cin >> codigo;
+    while (index < listaDeEspecialidadesMedicas.size() && listaDeEspecialidadesMedicas[index].getCodigo() != codigo) {};
+    if (listaDeEspecialidadesMedicas[index].getCodigo() == codigo) {
+        std::cout << "\n | " << listaDeEspecialidadesMedicas[index].getCodigo() << " | " << listaDeEspecialidadesMedicas[index].getDescricao();
+    } else {
+        std::cout << "\n |                |  Nao existem registros...                             |";
+        std::cout << "\n |________________________________________________________________________|";
+    }
+
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
+}
+
+// E S P E C I A L I D A D E    M E D I C A ==========================
