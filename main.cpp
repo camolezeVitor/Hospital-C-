@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <optional>
 
 //Classes
 class Medico {
@@ -165,6 +166,10 @@ public:
         this->descricao = descricao;
     }
 
+    CID () {
+
+    }
+
     //Getter
     std::string getCodigo() {
         return this->codigo;
@@ -176,6 +181,10 @@ public:
     //Setter
     void setDescricao(std::string descricao) {
         this->descricao = descricao;
+    }
+
+    void setCodigo (std::string codigo) {
+        this->codigo = codigo;
     }
 
 private:
@@ -370,18 +379,40 @@ private:
 };
 //Fim-Classes
 
+// TELAS =======================================================
 void mostrarTelaInicial();
-void mostrarTelaMedico(int);
-void mostrarTelaCidade(int);
-void mostrarTelaEspecialidadeMedica(int);
-void mostrarTelaCID(int);
-void mostrarTelaPaciente(int);
-void mostrarTelaMedicamento(int);
-void mostrarTelaConsulta(int);
+void mostrarTelaMedico();
+void mostrarTelaCidade();
+void mostrarTelaEspecialidadeMedica();
+void mostrarTelaCID();
+void mostrarTelaPaciente();
+void mostrarTelaMedicamento();
+void mostrarTelaConsulta();
+// TELAS =======================================================
+
+// CADASTRO ====================================================
+CID cadastroCID(std::vector<CID>*);
+
+// LISTAR ======================================================
+void listarCID(std::vector<CID>);
+
+// BUSCAR ======================================================
+void buscarCID(std::vector<CID>);
+
+// METODOS SINGULARES ==========================================
+std::optional<CID> metodoBuscarCID(std::string, std::vector<CID>);
+
+// GATEWAYS ====================================================
+void cidGateway(std::vector<CID>*);
+
+
+
+
 
 int main() {
 
     bool programaEstaRodando = true;
+    int opcao = -1;
     std::vector<Medico> listaDeMedicos;
     std::vector<Cidade> listaDeCidades;
     std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas;
@@ -389,14 +420,166 @@ int main() {
     std::vector<Paciente> listaDePacientes;
     std::vector<Medicamento> listaDeMedicamentos;
     std::vector<Consulta> listaDeConstultas;
-    
 
-
-
-
+    //Programa!
     while (programaEstaRodando) {
+        mostrarTelaInicial();
+        std::cin >> opcao;
 
+        switch (opcao) {
+            case 3:
+                cidGateway(&listaDeCids);
+                break;
+            default:
+                programaEstaRodando = false;
+                break;
+        }
+        system("CLS");
     }
 
     return 0;
 }
+
+void mostrarTelaInicial() {
+    std::cout << "\n"
+                 "  _    _                 _ _        _ \n"
+                 " | |  | |               (_) |      | |\n"
+                 " | |__| | ___  ___ _ __  _| |_ __ _| |\n"
+                 " |  __  |/ _ \\/ __| '_ \\| | __/ _` | |\n"
+                 " | |  | | (_) \\__ \\ |_) | | || (_| | |\n"
+                 " |_|  |_|\\___/|___/ .__/|_|\\__\\__,_|_| v0.0.1\n"
+                 "                  | |                 \n"
+                 "                  |_|                 ";
+    std::cout << "\n==============================================";
+    std::cout << "\n Opcoes | [ 1 ] : Medicos ";
+    std::cout << "\n        | [ 2 ] : Paciente ";
+    std::cout << "\n        | [ 3 ] : CID'S ";
+    std::cout << "\n        | [ 4 ] : Medicamentos ";
+    std::cout << "\n        | [ 5 ] : Consultas ";
+}
+
+
+
+
+
+// C I D =============================================================
+void cidGateway(std::vector<CID> *listaDeCids) {
+    int subOpcao = -1;
+    bool subRotinaRodando = true;
+
+    while (subRotinaRodando) {
+        mostrarTelaCID();
+        std::cin >> subOpcao;
+        switch (subOpcao) {
+            case 1:
+                cadastroCID(listaDeCids);
+                break;
+            case 2:
+                listarCID(*listaDeCids);
+                break;
+            case 3:
+                buscarCID(*listaDeCids);
+                break;
+            default:
+                subRotinaRodando = false;
+                break;
+        }
+    }
+}
+
+void mostrarTelaCID() {
+    system("CLS");
+    std::cout << "\n  _____";
+    std::cout << "\n | CID |__________________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Opcoes     |                                                       |";
+    std::cout << "\n | 1 - Cadastrar  |                                                       |";
+    std::cout << "\n | 2 - Listar     |                                                       |";
+    std::cout << "\n | 3 - Buscar     |                                                       |";
+    std::cout << "\n | 4 - Sair       |                                                       |";
+    std::cout << "\n |________________________________________________________________________|";
+    std::cout << "\n\n [ opcao ] ==> ";
+}
+
+CID cadastroCID(std::vector<CID> *listaDeCids) {
+    system("CLS");
+    std::string codigo, descricao, outSeq;
+    CID cid;
+
+    std::cout << "\n  _____";
+    std::cout << "\n | CID |__________________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Cadastrar  |                                                       |";
+    std::cout << "\n |================| Qual eh o codigo da CID ?                             |";
+    std::cout << "\n |                | ==> ";
+    std::getline(std::cin, codigo);
+    std::cout << "\n |                | Qual eh a descricao dessa CID ?                       |";
+    std::cout << "\n |                | ==> ";
+    std::getline(std::cin, descricao);
+    std::cout << "\n |                | Cadastro finalizado ...                               |";
+    std::cout << "\n |________________________________________________________________________|";
+
+    cid.setDescricao(descricao);
+    cid.setCodigo(codigo);
+    listaDeCids->push_back(cid);
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
+
+    return cid;
+}
+
+void listarCID(std::vector<CID> listaDeCids) {
+    system("CLS");
+    std::string outSeq;
+
+    if (listaDeCids.size() > 0) {
+        std::cout << "\n  _____";
+        std::cout << "\n | CID |__________________________________________________________________";
+        std::cout << "\n |========================================================================|";
+        for (CID cid : listaDeCids) {
+            std::cout << "\n | " << cid.getCodigo() << " | " << cid.getDescricao();
+        }
+        std::cout << "\n |________________________________________________________________________|";
+    } else {
+        std::cout << "\n  _____";
+        std::cout << "\n | CID |__________________________________________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |  Nao existem registros                                                 |";
+        std::cout << "\n |________________________________________________________________________|";
+    }
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
+}
+
+std::optional<CID> metodoBuscarCID(std::string codigo, std::vector<CID> listaDeCids) {
+    int index = 0;
+    while (index < listaDeCids.size() && listaDeCids[index].getCodigo() != codigo) {}
+
+    if (index == listaDeCids.size()) {
+        return std::nullopt;
+    }
+
+    return listaDeCids[index];
+}
+
+void buscarCID(std::vector<CID> listaDeCids) {
+    system("CLS");
+    std::string outSeq, codigo;
+    int index = 0;
+
+    std::cout << "\n  _____";
+    std::cout << "\n | CID |__________________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Buscar     |                                                       |";
+    std::cout << "\n |================| Qual eh o codigo da CID ?                             |";
+    std::cout << "\n |                | ==> ";
+    std::cin >> codigo;
+    while (index < listaDeCids.size() && listaDeCids[index].getCodigo() != codigo) {};
+    if (listaDeCids[index].getCodigo() == codigo) {
+        std::cout << "\n | " << listaDeCids[index].getCodigo() << " | " << listaDeCids[index].getDescricao();
+    } else {
+        std::cout << "\n |                |  Nao existem registros...                             |";
+        std::cout << "\n |________________________________________________________________________|";
+    }
+}
+// C I D =============================================================
