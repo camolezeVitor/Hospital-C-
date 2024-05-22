@@ -14,7 +14,7 @@ public:
         this->endereco = "Av John Doe";
         this->codigoCidade = -1;
         this->codigoEspecialidade = -1;
-        this->codigo = codigoDoUltimoMedicoRegistrado + 1;
+        this->codigo = codigoDoUltimoMedicoRegistrado;
     }
     Medico(std::string nome, std::string telefone, std::string endereco
             , int codigoCidade, int codigoEspecialidade, int codigoDoUltimoMedicoRegistrado) {
@@ -23,7 +23,7 @@ public:
         this->endereco = endereco;
         this->codigoCidade = codigoCidade;
         this->codigoEspecialidade = codigoEspecialidade;
-        this->codigo = codigoDoUltimoMedicoRegistrado + 1;
+        this->codigo = codigoDoUltimoMedicoRegistrado;
     }
 
     //Medico - Getters
@@ -42,6 +42,10 @@ public:
     int getCodigoEspecialidade() {
         return this->codigoEspecialidade;
     };
+
+    int getCodigo() {
+        return this->codigo;
+    }
 
     //Medico - Setters
     void setNome(std::string nome) {
@@ -395,21 +399,29 @@ void mostrarTelaConsulta();
 // CADASTRO ====================================================
 CID cadastroCID(std::vector<CID>*);
 EspecialidadeMedica cadastroEspecialidadeMedica(std::vector<EspecialidadeMedica>*);
+Medico cadastroMedico(std::vector<Medico>*);
 
 // LISTAR ======================================================
 void listarCID(std::vector<CID>);
 void listarEspecialidadesMedicas(std::vector<EspecialidadeMedica>);
+void listarMedicos(std::vector<Medico>);
 
 // BUSCAR ======================================================
 void buscarCID(std::vector<CID>);
 void buscarEspecialidadeMedica(std::vector<EspecialidadeMedica>);
+void buscarMedico(std::vector<Medico>);
 
 // METODOS SINGULARES ==========================================
 std::optional<CID> metodoBuscarCID(std::string, std::vector<CID>);
 std::optional<EspecialidadeMedica> metodoBuscarEspecialidadeMedica(std::vector<EspecialidadeMedica>);
+std::optional<Medico> metodoBuscarMedico(std::vector<Medico>);
+std::optional<Medico> metodoBuscarMedico(std::vector<Medico>, int);
+
 
 // GATEWAYS ====================================================
 void cidGateway(std::vector<CID>*);
+void especialidadeMedicaGateway(std::vector<EspecialidadeMedica>*);
+void medicoGateway(std::vector<Medico>*, std::vector<EspecialidadeMedica>*);
 
 
 
@@ -469,6 +481,7 @@ void mostrarTelaInicial() {
 
 
 // C I D =============================================================
+
 void cidGateway(std::vector<CID> *listaDeCids) {
     int subOpcao = -1;
     bool subRotinaRodando = true;
@@ -591,10 +604,34 @@ void buscarCID(std::vector<CID> listaDeCids) {
     std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
     std::cin >> outSeq;
 }
+
 // C I D =============================================================
 
 // E S P E C I A L I D A D E    M E D I C A ==========================
 
+void especialidadeMedicaGateway(std::vector<EspecialidadeMedica> *listaDeEspecialidadesMedicas) {
+    int subOpcao = -1;
+    bool subRotinaRodando = true;
+
+    while (subRotinaRodando) {
+        mostrarTelaEspecialidadeMedica();
+        std::cin >> subOpcao;
+        switch (subOpcao) {
+            case 1:
+                cadastroEspecialidadeMedica(listaDeEspecialidadesMedicas);
+                break;
+            case 2:
+                listarEspecialidadesMedicas(*listaDeEspecialidadesMedicas);
+                break;
+            case 3:
+                buscarEspecialidadeMedica(*listaDeEspecialidadesMedicas);
+                break;
+            default:
+                subRotinaRodando = false;
+                break;
+        }
+    }
+}
 
 void mostrarTelaEspecialidadeMedica() {
     system("CLS");
@@ -692,3 +729,71 @@ void buscarEspecialidadeMedica(std::vector<EspecialidadeMedica> listaDeEspeciali
 }
 
 // E S P E C I A L I D A D E    M E D I C A ==========================
+
+// M E D I C O =======================================================
+
+void mostrarTelaMedico() {
+
+    system("CLS");
+    std::cout << "\n  _________";
+    std::cout << "\n | Medicos |______________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Opcoes                    |                                        |";
+    std::cout << "\n | 1 - Cadastrar                 |                                        |";
+    std::cout << "\n | 2 - Listar                    |                                        |";
+    std::cout << "\n | 3 - Buscar                    |                                        |";
+    std::cout << "\n | 4 - Especialidades Medicas    |                                        |";
+    std::cout << "\n | 5 - Sair                      |                                        |";
+    std::cout << "\n |________________________________________________________________________|";
+    std::cout << "\n\n [ opcao ] ==> ";
+
+}
+
+std::optional<Medico> metodoBuscarMedico(std::vector<Medico> listaDeMedicos, int  codigoDoMedico) {
+    int index = 0;
+
+    while (index < listaDeMedicos.size() && listaDeMedicos[index].getCodigo() != codigoDoMedico) {};
+
+    if (listaDeMedicos[index].getCodigo() != codigoDoMedico) {
+        return std::nullopt;
+    }
+
+    return listaDeMedicos[index];
+}
+
+std::optional<int> cadastrarCodigoDoMedico(std::vector<Medico> listaDeMedicos) {
+
+    int codigoDoMedico;
+    std::cout << "\n |================| Qual eh o codigo do medico?                           |";
+    std::cout << "\n |                | ==> ";
+    std::cin >> codigoDoMedico;
+
+    if (metodoBuscarMedico(listaDeMedicos).has_value()) {
+        std::cout << "\n |================| ERRO: Esse codigo ja foi escolhido!                   |";
+        return std::nullopt;
+    }
+
+    return codigoDoMedico;
+};
+
+Medico cadastroMedico(std::vector<Medico>* listaDeMedicos) {
+    std::optional<int> codigo = std::nullopt;
+    int codigoCidade, codigoEspecialidade;
+    std::string nome, telefone, endereco, outSeq;
+
+    system("CLS");
+    std::cout << "\n  _________";
+    std::cout << "\n | Medicos |______________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Cadastrar  |                                                       |";
+    while (!codigo.has_value()) {
+        codigo = cadastrarCodigoDoMedico(*listaDeMedicos);
+    }
+
+    //Tem que cadastrar cidade
+    //Tem que ver se tem especialidade e fazer o cadastro se não tiver!!!!
+
+    std::cout << "\n |                | Cadastro finalizado ...                               |";
+    std::cout << "\n |________________________________________________________________________|";
+}
+
