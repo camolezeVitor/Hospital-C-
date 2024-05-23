@@ -128,13 +128,12 @@ private:
 class EspecialidadeMedica {
 public:
 
-    EspecialidadeMedica() {};
-
     //Construtores
-    EspecialidadeMedica(int codigoEspecialidade) {
+    explicit EspecialidadeMedica(int codigoEspecialidade) {
         this->codigo = codigoEspecialidade;
         this->descricao = "Unknown description";
     }
+
     EspecialidadeMedica(int codigoEspecialidade, std::string descricao) {
         this->codigo = codigoEspecialidade;
         this->descricao = descricao;
@@ -388,6 +387,7 @@ class Buscas {
 public:
 
     std::optional<T> buscarPorCPF(std::vector<T> lista, std::string cpf) {
+        if (lista.size() == 0) { return std::nullopt; }
 
         this->zerarIndex();
 
@@ -401,6 +401,7 @@ public:
     }
 
     std::optional<T> buscarPorCodigo(std::vector<T> lista, int codigo) {
+        if (lista.size() == 0) { return std::nullopt; }
 
         this->zerarIndex();
 
@@ -413,6 +414,7 @@ public:
     }
 
     std::optional<T> buscarPorCodigo(std::vector<T> lista, std::string codigo) {
+        if (lista.size() == 0) { return std::nullopt; }
 
         this->zerarIndex();
 
@@ -466,6 +468,8 @@ void cidGateway(std::vector<CID>*);
 void especialidadeMedicaGateway(std::vector<EspecialidadeMedica>*);
 void medicoGateway(std::vector<Medico>*, std::vector<EspecialidadeMedica>*);
 
+// TRATAMENTOS =================================================
+std::optional<int> tratarSelecaoDeCodigoEspecialidadeMedica(std::vector<EspecialidadeMedica>);
 
 
 int main() {
@@ -489,6 +493,8 @@ int main() {
             case 3:
                 cidGateway(&listaDeCids);
                 break;
+            case 4:
+                especialidadeMedicaGateway(&listaDeEspecialidadesMedicas);
             default:
                 programaEstaRodando = false;
                 break;
@@ -513,8 +519,10 @@ void mostrarTelaInicial() {
     std::cout << "\n Opcoes | [ 1 ] : Medicos ";
     std::cout << "\n        | [ 2 ] : Paciente ";
     std::cout << "\n        | [ 3 ] : CID'S ";
-    std::cout << "\n        | [ 4 ] : Medicamentos ";
-    std::cout << "\n        | [ 5 ] : Consultas ";
+    std::cout << "\n        | [ 4 ] : Especialidades Medicas ";
+    std::cout << "\n        | [ 5 ] : Medicamentos ";
+    std::cout << "\n        | [ 6 ] : Consultas ";
+    std::cout << "\n\n        [ opcao ] ==> ";
 }
 
 
@@ -569,9 +577,11 @@ CID cadastroCID(std::vector<CID> *listaDeCids) {
     std::cout << "\n |     Cadastrar  |                                                       |";
     std::cout << "\n |================| Qual eh o codigo da CID ?                             |";
     std::cout << "\n |                | ==> ";
+    std::cin.ignore();
     std::getline(std::cin, codigo);
     std::cout << "\n |                | Qual eh a descricao dessa CID ?                       |";
     std::cout << "\n |                | ==> ";
+    std::cin.ignore();
     std::getline(std::cin, descricao);
     std::cout << "\n |                | Cadastro finalizado ...                               |";
     std::cout << "\n |________________________________________________________________________|";
@@ -598,9 +608,6 @@ void listarCID(std::vector<CID> listaDeCids) {
         }
         std::cout << "\n |________________________________________________________________________|";
     } else {
-        std::cout << "\n  _____";
-        std::cout << "\n | CID |__________________________________________________________________";
-        std::cout << "\n |========================================================================|";
         std::cout << "\n |  Nao existem registros                                                 |";
         std::cout << "\n |________________________________________________________________________|";
     }
@@ -608,21 +615,9 @@ void listarCID(std::vector<CID> listaDeCids) {
     std::cin >> outSeq;
 }
 
-std::optional<CID> metodoBuscarCID(std::string codigo, std::vector<CID> listaDeCids) {
-    int index = 0;
-    while (index < listaDeCids.size() && listaDeCids[index].getCodigo() != codigo) { index++; }
-
-    if (index == listaDeCids.size()) {
-        return std::nullopt;
-    }
-
-    return listaDeCids[index];
-}
-
 void buscarCID(std::vector<CID> listaDeCids) {
     system("CLS");
     std::string outSeq, codigo;
-    int index = 0;
 
     std::cout << "\n  _____";
     std::cout << "\n | CID |__________________________________________________________________";
@@ -631,9 +626,11 @@ void buscarCID(std::vector<CID> listaDeCids) {
     std::cout << "\n |================| Qual eh o codigo da CID ?                             |";
     std::cout << "\n |                | ==> ";
     std::cin >> codigo;
-    while (index < listaDeCids.size() && listaDeCids[index].getCodigo() != codigo) {};
-    if (listaDeCids[index].getCodigo() == codigo) {
-        std::cout << "\n | " << listaDeCids[index].getCodigo() << " | " << listaDeCids[index].getDescricao();
+
+    std::optional<CID> cid = Buscas<CID>().buscarPorCodigo(std::move(listaDeCids), codigo);
+
+    if (cid.has_value()) {
+        std::cout << "\n | " << cid->getCodigo() << " | " << cid->getDescricao();
     } else {
         std::cout << "\n |                |  Nao existem registros...                             |";
         std::cout << "\n |________________________________________________________________________|";
@@ -685,18 +682,22 @@ void mostrarTelaEspecialidadeMedica() {
     std::cout << "\n\n [ opcao ] ==> ";
 }
 
-std::optional<EspecialidadeMedica> metodoBuscarEspecialidadeMedica(std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas, int codigo) {
-    int index = 0;
-    while (index < listaDeEspecialidadesMedicas.size() && listaDeEspecialidadesMedicas[index].getCodigo() != codigo) {};
+std::optional<int> tratarSelecaoDeCodigoEspecialidadeMedica(std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas) {
+    int codigo;
+    std::cout << "\n |================| Qual eh o codigo da especialidade ?                   |";
+    std::cout << "\n |                | ==> ";
+    std::cin >> codigo;
 
-    if (listaDeEspecialidadesMedicas[index].getCodigo() != codigo) {
+    if (Buscas<EspecialidadeMedica>().buscarPorCodigo(std::move(listaDeEspecialidadesMedicas), codigo)) {
+        std::cout << "\n |================| ERRO: Esse codigo ja foi escolhido!                   |";
         return std::nullopt;
     }
 
-    return listaDeEspecialidadesMedicas[index];
+    return codigo;
 }
 
 EspecialidadeMedica cadastroEspecialidadeMedica(std::vector<EspecialidadeMedica> *listaDeEspecialidadesMedicas) {
+    std::optional<int> codigo;
     std::string descricao, outSeq;
 
     system("CLS");
@@ -704,20 +705,26 @@ EspecialidadeMedica cadastroEspecialidadeMedica(std::vector<EspecialidadeMedica>
     std::cout << "\n | Especialidades Medicas |_______________________________________________";
     std::cout << "\n |========================================================================|";
     std::cout << "\n |     Cadastrar  |                                                       |";
+
+
+    while (!codigo.has_value()) {
+        codigo = tratarSelecaoDeCodigoEspecialidadeMedica(*listaDeEspecialidadesMedicas);
+    }
+
     std::cout << "\n |================| Qual eh a descricao da especialidade ?                |";
     std::cout << "\n |                | ==> ";
+    std::cin.ignore();
     std::getline(std::cin, descricao);
     std::cout << "\n |                | Cadastro finalizado ...                               |";
     std::cout << "\n |________________________________________________________________________|";
 
-    listaDeEspecialidadesMedicas->push_back(
-            EspecialidadeMedica(listaDeEspecialidadesMedicas->size(), descricao)
-            );
+    EspecialidadeMedica especialidadeMedica(codigo.value(), descricao);
+    listaDeEspecialidadesMedicas->push_back(especialidadeMedica);
 
     std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
     std::cin >> outSeq;
 
-    return EspecialidadeMedica(listaDeEspecialidadesMedicas->size(), descricao);
+    return especialidadeMedica;
 }
 
 void listarEspecialidadesMedicas(std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas) {
@@ -747,18 +754,20 @@ void listarEspecialidadesMedicas(std::vector<EspecialidadeMedica> listaDeEspecia
 void buscarEspecialidadeMedica(std::vector<EspecialidadeMedica> listaDeEspecialidadesMedicas) {
     system("CLS");
     std::string outSeq;
-    int index = 0, codigo;
+    int codigo;
 
-    std::cout << "\n  _____";
-    std::cout << "\n | CID |__________________________________________________________________";
+    std::cout << "\n  ______________________";
+    std::cout << "\n | Especialidade Medica |_________________________________________________";
     std::cout << "\n |========================================================================|";
     std::cout << "\n |     Buscar     |                                                       |";
     std::cout << "\n |================| Qual eh o codigo da Especialidade ?                   |";
     std::cout << "\n |                | ==> ";
     std::cin >> codigo;
-    while (index < listaDeEspecialidadesMedicas.size() && listaDeEspecialidadesMedicas[index].getCodigo() != codigo) {};
-    if (listaDeEspecialidadesMedicas[index].getCodigo() == codigo) {
-        std::cout << "\n | " << listaDeEspecialidadesMedicas[index].getCodigo() << " | " << listaDeEspecialidadesMedicas[index].getDescricao();
+
+    std::optional<EspecialidadeMedica> especialidade = Buscas<EspecialidadeMedica>().buscarPorCodigo(listaDeEspecialidadesMedicas, codigo);
+
+    if (especialidade.has_value()) {
+        std::cout << "\n | " << especialidade->getCodigo() << " | " << especialidade->getDescricao();
     } else {
         std::cout << "\n |                |  Nao existem registros...                             |";
         std::cout << "\n |________________________________________________________________________|";
@@ -769,3 +778,5 @@ void buscarEspecialidadeMedica(std::vector<EspecialidadeMedica> listaDeEspeciali
 }
 
 // E S P E C I A L I D A D E    M E D I C A ==========================
+
+// C I D A D E =======================================================
