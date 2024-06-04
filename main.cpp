@@ -416,7 +416,8 @@ public:
     }
 
     std::optional<T> buscarPorCodigo(std::vector<T> lista, int codigo) {
-        if (lista.size() == 0) { return std::nullopt; }
+
+        if (lista.empty()) { return std::nullopt; }
 
         this->zerarIndex();
 
@@ -440,6 +441,45 @@ public:
         }
         return std::nullopt;
 
+    }
+
+    std::optional<T*> buscarPorCodigoERetornarEnderecoDeMemoria(std::vector<T> *lista, int codigo) {
+        if (lista->size() == 0) { return std::nullopt; }
+
+        this->zerarIndex();
+
+        while (index < lista->size() && lista->at(index).getCodigo() != codigo) { index++; }
+
+        if (lista->at(index).getCodigo() == codigo) {
+            return &lista->at(index);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<T*> buscarPorCodigoERetornarEnderecoDeMemoria(std::vector<T> *lista, std::string codigo) {
+        if (lista->size() == 0) { return std::nullopt; }
+
+        this->zerarIndex();
+
+        while (index < lista->size() && (std::to_string(lista->at(index).getCodigo()) != codigo)) { index++; }
+
+        if (std::to_string(lista->at(index).getCodigo()) == codigo) {
+            return &lista->at(index);
+        }
+        return std::nullopt;
+    }
+
+    std::optional<int> buscarIndexNaLista(std::vector<T> *lista, int codigo) {
+        if (lista->size() == 0) { return std::nullopt; }
+
+        this->zerarIndex();
+
+        while (index < lista->size() && lista->at(index).getCodigo() != codigo) { index++; }
+
+        if (lista->at(index).getCodigo() == codigo) {
+            return index;
+        }
+        return std::nullopt;
     }
 
     void zerarIndex() {
@@ -490,6 +530,9 @@ void medicoGateway(std::vector<Medico>*, std::vector<Cidade>*, std::vector<Espec
 void cidadeGateway(std::vector<Cidade>*);
 void medicamentoGateway(std::vector<Medicamento>*);
 void medicamentoSubGateway(std::vector<Medicamento>*, int);
+void pacienteGateway(std::vector<Paciente>*, std::vector<Cidade>*, std::vector<Consulta>*);
+void consultaGateway(std::vector<Consulta>*, std::vector<Paciente>*, std::vector<CID>*,
+                     std::vector<Medicamento>*, std::vector<Medico>*, std::vector<EspecialidadeMedica>*, std::vector<Cidade>*);
 
 // TRATAMENTOS =================================================
 std::optional<int> tratarSelecaoDeCodigoEspecialidadeMedica(std::vector<EspecialidadeMedica>);
@@ -517,25 +560,32 @@ int main() {
     while (programaEstaRodando) {
         mostrarTelaInicial();
         std::cin >> opcao;
+        std::cin.ignore();
 
-        switch (opcao) {
-            case 1:
-                medicoGateway(&listaDeMedicos, &listaDeCidades, &listaDeEspecialidadesMedicas);
-                break;
-            case 3:
-                cidGateway(&listaDeCids);
-                break;
-            case 4:
-                especialidadeMedicaGateway(&listaDeEspecialidadesMedicas);
-                break;
-            case 5:
-                medicamentoGateway(&listaDeMedicamentos);
-                break;
-            default:
-                programaEstaRodando = false;
-                break;
+        if (opcao == 1) {
+            medicoGateway(&listaDeMedicos, &listaDeCidades, &listaDeEspecialidadesMedicas);
+        }
+        if (opcao == 2) {
+            pacienteGateway(&listaDePacientes, &listaDeCidades, &listaDeConstultas);
+        }
+        if (opcao == 3) {
+            cidGateway(&listaDeCids);
+        }
+        if (opcao == 4) {
+            especialidadeMedicaGateway(&listaDeEspecialidadesMedicas);
+        }
+        if (opcao == 5) {
+            medicamentoGateway(&listaDeMedicamentos);
+        }
+        if (opcao == 6) {
+            consultaGateway(&listaDeConstultas, &listaDePacientes, &listaDeCids, &listaDeMedicamentos,
+                            &listaDeMedicos, &listaDeEspecialidadesMedicas, &listaDeCidades);
         }
         system("CLS");
+
+        if (opcao < 0 || opcao >= 7) {
+            programaEstaRodando = false;
+        }
     }
 
     return 0;
@@ -596,6 +646,21 @@ void mostrarTelaCID() {
     std::cout << "\n | 4 - Sair       |                                                       |";
     std::cout << "\n |________________________________________________________________________|";
     std::cout << "\n\n [ opcao ] ==> ";
+}
+std::optional<std::string> tratarBuscaDeCodigoDeDoenca(std::vector<CID> listaDeCIDS) {
+    std::string codigo;
+    std::cout << "\n |================| Qual eh o codigo da cid ?                             |";
+    std::cout << "\n |                | ==> ";
+    std::cin >> codigo;
+
+    std::optional<CID> cid = Buscas<CID>().buscarPorCodigo(std::move(listaDeCIDS), codigo);
+
+    if (!cid.has_value()) {
+        std::cout << "\n |                |  Nao existem registros...                             |";
+        return std::nullopt;
+    }
+
+    return codigo;
 }
 CID cadastroCID(std::vector<CID> *listaDeCids) {
     system("CLS");
@@ -844,7 +909,7 @@ std::optional<int> tratarSelecaoDeCodigoDeCidade(std::vector<Cidade> listaDeCida
     std::cout << "\n |                | ==> ";
     std::cin >> codigo;
 
-    if (Buscas<Cidade>().buscarPorCodigo(std::move(listaDeCidades), codigo)) {
+    if (Buscas<Cidade>().buscarPorCodigo(listaDeCidades, codigo)) {
         std::cout << "\n |================| ERRO: Esse codigo ja foi escolhido!";
         return std::nullopt;
     }
@@ -1025,8 +1090,11 @@ Medico cadastrarMedico(
     std::cin >> outSeq;
     if (std::tolower(outSeq) == 's') {
         while (!codigoCidade.has_value()) {
-            codigoCidade = tratarSelecaoDeCodigoDeCidade(*listaDeCidades);
-            if (!codigoCidade.has_value()) {
+            std::cout << "\n |================| Qual eh o codigo da cidade ?                          |";
+            std::cout << "\n |                | ==> ";
+            std::cin >> outSeq;
+            std::optional<Cidade> cidadeBuscada = Buscas<Cidade>().buscarPorCodigo(*listaDeCidades, outSeq);
+            if (!cidadeBuscada.has_value()) {
                 listarCidades(*listaDeCidades);
                 std::cout << "\n | Aparentemente nao foi localizada a cidade, voce gostaria               |";
                 std::cout << "\n | de cadastrar uma cidade para esse medico?                              |";
@@ -1037,7 +1105,10 @@ Medico cadastrarMedico(
                 if (std::tolower(outSeq) == 's') {
                     codigoCidade = cadastrarCidade(listaDeCidades).getCodigo();
                 }
+            } else {
+                codigoEspecialidade = cidadeBuscada->getCodigo();
             }
+
         }
     } else {
         codigoCidade = cadastrarCidade(listaDeCidades).getCodigo();
@@ -1050,8 +1121,11 @@ Medico cadastrarMedico(
     std::cin >> outSeq;
     if (std::tolower(outSeq) == 's') {
         while (!codigoEspecialidade.has_value()) {
-            codigoEspecialidade = tratarSelecaoDeCodigoEspecialidadeMedica(*listaDeEspecialidadesMedicas);
-            if (!codigoEspecialidade.has_value()) {
+            std::cout << "\n |================| Qual eh o codigo da especialidade ?                   |";
+            std::cout << "\n |                | ==> ";
+            std::cin >> outSeq;
+            std::optional<EspecialidadeMedica> especialidadeMedicaCadastrada = Buscas<EspecialidadeMedica>().buscarPorCodigo(*listaDeEspecialidadesMedicas, outSeq);
+            if (!especialidadeMedicaCadastrada.has_value()) {
                 listarEspecialidadesMedicas(*listaDeEspecialidadesMedicas);
                 std::cout << "\n | Aparentemente nao foi localizada a especialidade, voce gostaria        |";
                 std::cout << "\n | de cadastrar uma especialidade para esse medico?                       |";
@@ -1062,6 +1136,8 @@ Medico cadastrarMedico(
                 if (std::tolower(outSeq) == 's') {
                     codigoEspecialidade = cadastroEspecialidadeMedica(listaDeEspecialidadesMedicas).getCodigo();
                 }
+            } else {
+                codigoEspecialidade = especialidadeMedicaCadastrada->getCodigo();
             }
         }
     } else {
@@ -1261,6 +1337,37 @@ std::optional<int> tratarSelecaoDeCodigoDeMedicamento(std::vector<Medicamento> l
 
     return codigo;
 }
+int receitarQuantidadeDeMedicamento(std::vector<Medicamento> *listaDeMedicamentos, int codigoMedicamento) {
+    Medicamento *medicamento = Buscas<Medicamento>().buscarPorCodigoERetornarEnderecoDeMemoria(
+            listaDeMedicamentos, codigoMedicamento).value();
+    int quantidade = -1;
+
+    if (medicamento->getQuantidadeEstoque() <= medicamento->getEstoqueMinimo()) {
+        std::cout << "\n |================| Estoque baixo! Informe uma quantidade para encomendar!|";
+        std::cin >> quantidade;
+        std::cin.ignore();
+        medicamento->setQuantidadeEstoque(medicamento->getQuantidadeEstoque() + quantidade);
+    }
+    quantidade = -1;
+
+    while (quantidade < 0 || quantidade > medicamento->getQuantidadeEstoque()) {
+        std::cout << "\n |================| Quantas unidades desse remedio voce quer receitar?    |";
+        std::cout << "\n |                | ==> ";
+        std::cin >> quantidade;
+        std::cin.ignore();
+        if (quantidade < 0) {
+            std::cout << "\n |================| [ERRO]: quantidade negativa! informe um numero valido!|";
+        }
+        if (quantidade > medicamento->getQuantidadeEstoque()) {
+            std::cout << "\n |================| [ERRO]: voce informou uma quantidade muito maior do   |";
+            std::cout << "\n |                | que existe no estoque! Informe uma quantidade menor   |";
+        }
+    }
+
+    medicamento->setQuantidadeEstoque(medicamento->getQuantidadeEstoque() - quantidade);
+
+    return quantidade;
+}
 Medicamento cadastrarMedicamento(std::vector<Medicamento> *listaDeMedicamentos) {
     std::string descricao, outSeq;
     std::optional<int> codigo;
@@ -1393,12 +1500,17 @@ void mostrarTelaEstoqueMedicamentosAbaixoDaQuantidadeMinima(std::vector<Medicame
     } else {
         for (Medicamento medicamento : *listaDeMedicamentos) {
             if (medicamento.getEstoqueMinimo() > medicamento.getQuantidadeEstoque()) {
-                std::cout << "\n | AVISO!! EDICAMENTO COM BAIXA QUANTIDADE DE ESTOQUE!! COMPRAR MAIS!!   |";
-                std::cout << "\n | Codigo :: " << medicamento.getCodigo();
-                std::cout << "\n | Nome Medicamento :: " << medicamento.getDescricao();
-                std::cout << "\n | QTD estoque :: " << medicamento.getQuantidadeEstoque();
-                std::cout << "\n | MIN :: " << medicamento.getEstoqueMinimo() << " MAX :: " << medicamento.getEstoqueMaximo();
-                std::cout << "\n | Valor :: R$" << medicamento.getPrecoUnitario();
+                std::cout << "\n\n |                | AVISO!! EDICAMENTO COM BAIXA QUANTIDADE DE ESTOQUE!! COMPRAR MAIS!!   |";
+                std::cout << "\n |                | Codigo :: " << medicamento.getCodigo();
+                std::cout << "\n |                | Nome Medicamento :: " << medicamento.getDescricao();
+                std::cout << "\n |                | QTD estoque :: " << medicamento.getQuantidadeEstoque();
+                std::cout << "\n |                | MIN :: " << medicamento.getEstoqueMinimo() << " MAX :: " << medicamento.getEstoqueMaximo();
+                std::cout << "\n |                | Valor :: R$" << medicamento.getPrecoUnitario();
+                std::cout << "\n |================| Para Solucionar o problema de estoque eh necessario   |";
+                std::cout << "\n |                | Comprar " << medicamento.getEstoqueMinimo() - medicamento.getQuantidadeEstoque() << " Para chegar no [MINIMO]";
+                std::cout << "\n |                | R$"<< ((float) medicamento.getEstoqueMinimo() - (float) medicamento.getQuantidadeEstoque()) * medicamento.getPrecoUnitario();
+                std::cout << "\n |                | Comprar " << medicamento.getEstoqueMaximo() - (medicamento.getEstoqueMinimo() - medicamento.getQuantidadeEstoque()) << " Para chegar no [MAXIMO]";
+                std::cout << "\n |                | R$"<< (float) medicamento.getEstoqueMaximo() - ((float) medicamento.getEstoqueMinimo() - (float) medicamento.getQuantidadeEstoque()) * medicamento.getPrecoUnitario();
             }
         }
     }
@@ -1412,8 +1524,6 @@ void mostrarTelaEstoqueMedicamentosAbaixoDaQuantidadeMinima(std::vector<Medicame
 // M E D I C A M E N T O =============================================
 
 // P A C I E N T E ===================================================
-void pacienteGateway(std::vector<Paciente> *listaDePacientes) {
-};
 void mostrarTelaPaciente() {
     system("CLS");
     std::cout << "\n  __________";
@@ -1424,7 +1534,7 @@ void mostrarTelaPaciente() {
     std::cout << "\n | 2 - Excluir     |                                                      |";
     std::cout << "\n | 3 - Listar      |                                                      |";
     std::cout << "\n | 4 - Buscar      |                                                      |";
-    std::cout << "\n | 4 - Sair        |                                                      |";
+    std::cout << "\n | 5 - Sair        |                                                      |";
     std::cout << "\n |________________________________________________________________________|";
     std::cout << "\n\n [ opcao ] ==> ";
 };
@@ -1517,7 +1627,8 @@ int encontrarIndexDePacientePreviamenteValidado(std::vector<Paciente> listaDePac
     while (index < listaDePacientes.size() && (listaDePacientes.at(index).getCpf() != cpf)) {index++;};
     return index;
 }
-void deletarUmPaciente(std::vector<Paciente> *listaDePacientes, std::vector<Cidade> *listaDeCidades) {
+void deletarUmPaciente(std::vector<Paciente> *listaDePacientes, std::vector<Cidade> *listaDeCidades,
+                       std::vector<Consulta> *listaDeConsultas) {
     std::string outSeq, cpf;
 
     std::cout << "\n  __________";
@@ -1530,10 +1641,18 @@ void deletarUmPaciente(std::vector<Paciente> *listaDePacientes, std::vector<Cida
     std::optional<Paciente> paciente = Buscas<Paciente>().buscarPorCodigo(*listaDePacientes, cpf);
 
     if (paciente.has_value()) {
+
+        listaDeCidades->erase(std::next(
+                listaDeCidades->begin(),
+                Buscas<Cidade>().buscarIndexNaLista(listaDeCidades, paciente->getCodigoCidade()).value()
+                ));
+
         listaDePacientes->erase(std::next(
                 listaDePacientes->begin(),
                 encontrarIndexDePacientePreviamenteValidado(*listaDePacientes, paciente->getCpf())
                 ));
+
+        std::cout << "\n |                | Registros apagados                                    |";
     } else {
         std::cout << "\n |                |  Nao existem registros...                             |";
     }
@@ -1594,14 +1713,42 @@ Paciente cadastrarUmPaciente(std::vector<Paciente> *listaDePaciente, std::vector
 
     return paciente;
 };
+void pacienteGateway(std::vector<Paciente> *listaDePacientes, std::vector<Cidade> *listaDeCidades, std::vector<Consulta> *listaDeConsultas) {
+    int opcao = 1;
+    while (opcao > 0 && opcao < 5) {
+        mostrarTelaPaciente();
+        std::cin >> opcao;
+        std::cin.ignore();
+        if (opcao == 1) {
+            cadastrarUmPaciente(listaDePacientes, listaDeCidades);
+        }
+        if (opcao == 2) {
+            deletarUmPaciente(listaDePacientes, listaDeCidades, listaDeConsultas);
+        }
+        if (opcao == 3) {
+            listarPacientes(*listaDePacientes, *listaDeCidades);
+        }
+        if (opcao == 4) {
+            buscarUmPaciente(listaDePacientes, listaDeCidades);
+        }
+    }
+};
 // P A C I E N T E ===================================================
 
-//this->codigoDoenca = codigoDoenca;
-//this->codigoMedicamento = codigoMedicamento;
-//this->quantidadeMedicamento = quantidadeMedicamento;
-
 // C O N S U L T A ===================================================
-void consultaGateway(std::vector<Consulta> *listaDeConsultas) {};
+void mostrarTelaConsulta() {
+    system("CLS");
+    std::cout << "\n  ___________";
+    std::cout << "\n | Consultas |____________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Opcoes      |                                                      |";
+    std::cout << "\n | 1 - Cadastrar   |                                                      |";
+    std::cout << "\n | 2 - Listar      |                                                      |";
+    std::cout << "\n | 3 - Buscar      |                                                      |";
+    std::cout << "\n | 4 - Sair        |                                                      |";
+    std::cout << "\n |________________________________________________________________________|";
+    std::cout << "\n\n [ opcao ] ==> ";
+}
 std::optional<int> tratarSelecaoDeCodigoDeConsulta(std::vector<Consulta> *listaDeConsultas) {
     int codigo;
 
@@ -1683,7 +1830,8 @@ Consulta cadastrarConsulta(std::vector<Consulta> *listaDeConsultas, std::vector<
                            std::vector<Medicamento> *listaDeMedicamentos, std::vector<Medico> *listaDeMedicos, std::vector<Cidade> *listadeCidades) {
     std::string outSeq, horario, data;
     std::optional<int> codigo, codigoMedico, codigoMedicamento;
-    std::optional<std::string> cpfPaciente;
+    std::optional<std::string> cpfPaciente, codigoDoenca;
+    int quantidadeMedicamento;
 
     system("CLS");
     std::cout << "\n  ___________";
@@ -1693,13 +1841,13 @@ Consulta cadastrarConsulta(std::vector<Consulta> *listaDeConsultas, std::vector<
     while(!codigo.has_value()) {
         codigo = tratarSelecaoDeCodigoDeConsulta(listaDeConsultas);
     }
-    std::cout << "\n |                | Informe o horario da consulta:                        |";
+    std::cout << "\n |================| Informe o horario da consulta:                        |";
     std::cout << "\n |                | ==> ";
     std::getline(std::cin, horario);
-    std::cout << "\n |                | Informe a data da consulta                            |";
+    std::cout << "\n |================| Informe a data da consulta                            |";
     std::cout << "\n |                | ==> ";
     std::getline(std::cin, data);
-    std::cout << "\n |                | Ja existe um paciente cadastrado para a consulta?     |";
+    std::cout << "\n |================| Ja existe um paciente cadastrado para a consulta?     |";
     std::cout << "\n |                | S [ Sim ] / N [ Nao ]                                 |";
     std::cout << "\n |                | ==> ";
     std::getline(std::cin, outSeq);
@@ -1720,7 +1868,7 @@ Consulta cadastrarConsulta(std::vector<Consulta> *listaDeConsultas, std::vector<
     } else {
         cpfPaciente = cadastrarUmPaciente(listaDePacientes, listadeCidades).getCpf();
     }
-    std::cout << "\n |                | Ja existe um medico cadastrado para a consulta?       |";
+    std::cout << "\n |================| Ja existe um medico cadastrado para a consulta?       |";
     std::cout << "\n |                | S [ Sim ] / N [ Nao ]                                 |";
     std::cout << "\n |                | ==> ";
     std::getline(std::cin, outSeq);
@@ -1741,7 +1889,7 @@ Consulta cadastrarConsulta(std::vector<Consulta> *listaDeConsultas, std::vector<
     } else {
         codigoMedico = cadastrarMedico(listaDeMedicos, listadeCidades, listaDeEspecialidades).getCodigo();
     }
-    std::cout << "\n |                | Ja existe um medicamento cadastrado para a consulta?  |";
+    std::cout << "\n |================| Ja existe um medicamento cadastrado para a consulta?  |";
     std::cout << "\n |                | S [ Sim ] / N [ Nao ]                                 |";
     std::cout << "\n |                | ==> ";
     std::getline(std::cin, outSeq);
@@ -1762,4 +1910,197 @@ Consulta cadastrarConsulta(std::vector<Consulta> *listaDeConsultas, std::vector<
     } else {
         codigoMedicamento = cadastrarMedicamento(listaDeMedicamentos).getCodigo();
     }
+    std::cout << "\n |================| Quantas unidades desse remedio voce quer receitar?    |";
+    std::cout << "\n |                | ==> ";
+    quantidadeMedicamento = receitarQuantidadeDeMedicamento(listaDeMedicamentos, codigoMedicamento.value());
+    std::cout << "\n |================| Ja existe uma doenca cadastrada para o paciente?      |";
+    std::cout << "\n |                | S [ Sim ] / N [ Nao ]                                 |";
+    std::cout << "\n |                | ==> ";
+    std::getline(std::cin, outSeq);
+    if (outSeq == "S") {
+        while(!codigoDoenca.has_value()) {
+            codigoDoenca = tratarBuscaDeCodigoDeDoenca(*listaDeCIDS);
+            if (!codigoDoenca.has_value()) {
+                std::cout << "\n | Aparentemente nao foi localizado a doenca, voce gostaria de cadastrar  |";
+                std::cout << "\n | uma nova doenca para o paciente?                                       |";
+                std::cout << "\n |                | S [ Sim ] / N [ Nao ]                                 |";
+                std::cout << "\n |                | ==> ";
+                std::getline(std::cin, outSeq);
+                if (outSeq == "S") {
+                    codigoDoenca = cadastroCID(listaDeCIDS).getCodigo();
+                }
+            }
+        }
+    } else {
+        codigoDoenca = cadastroCID(listaDeCIDS).getCodigo();
+    }
+    Consulta consulta(
+            cpfPaciente.value(),
+            codigoMedico.value(),
+            data,
+            horario,
+            codigoDoenca.value(),
+            codigoMedicamento.value(),
+            quantidadeMedicamento
+            );
+    listaDeConsultas->push_back(consulta);
+
+    std::cout << "\n |                | Cadastro da consulta finalizado ...                   |";
+    std::cout << "\n |________________________________________________________________________|";
+
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::getline(std::cin, outSeq);
+
+    return consulta;
 }
+void buscarConsulta(std::vector<Consulta> listaDeConsultas, std::vector<Paciente> listaDePacientes, std::vector<CID> listaDeCIDS,
+                    std::vector<Medicamento> listaDeMedicamentos, std::vector<Medico> listaDeMedicos, std::vector<EspecialidadeMedica> listaDeEspecialidades) {
+    std::string outSeq;
+    int codigoConsulta;
+
+    std::cout << "\n  ___________";
+    std::cout << "\n | Consultas |____________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Buscar     |                                                       |";
+    std::cout << "\n |================| Informe o codigo da consulta                          |";
+    std::cout << "\n |                | ==> ";
+    std::cin >> codigoConsulta;
+    std::cin.ignore();
+
+    std::optional<Consulta> consulta = Buscas<Consulta>().buscarPorCodigo(listaDeConsultas, codigoConsulta);
+
+    if (consulta.has_value()) {
+        Paciente paciente = Buscas<Paciente>().buscarPorCodigo(
+                listaDePacientes, consulta->getCpfPaciente()
+        ).value();
+        CID cid = Buscas<CID>().buscarPorCodigo(
+                listaDeCIDS, consulta->getCodigoDoenca()
+        ).value();
+        Medicamento medicamento = Buscas<Medicamento>().buscarPorCodigo(
+                listaDeMedicamentos, consulta->getCodigoMedicamento()
+        ).value();
+        Medico medico = Buscas<Medico>().buscarPorCodigo(
+                listaDeMedicos, consulta->getCodigoMedico()
+        ).value();
+        EspecialidadeMedica especialidadeMedica = Buscas<EspecialidadeMedica>().buscarPorCodigo(
+                listaDeEspecialidades, medico.getCodigoEspecialidade()
+        ).value();
+
+        std::cout << "\n\n  __________";
+        std::cout << "\n | Consulta |_____________________________________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |                | Data :: " << consulta->getData();
+        std::cout << "\n |                | Horario :: " << consulta->getHorario();
+        std::cout << "\n  __________";
+        std::cout << "\n | Paciente |_____________________________________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |                | CPF :: " << paciente.getCpf();
+        std::cout << "\n |                | Nome :: " << paciente.getNome();
+        std::cout << "\n |                | Endereco :: " << paciente.getEndereco();
+        std::cout << "\n  ________";
+        std::cout << "\n | Medico |_______________________________________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |                | Nome :: " << medico.getNome();
+        std::cout << "\n |                | Telefone :: " << medico.getTelefone();
+        std::cout << "\n |                | Endereco :: " << medico.getEndereco();
+        std::cout << "\n |                | Especialidade :: " << especialidadeMedica.getDescricao();
+        std::cout << "\n  ______________________";
+        std::cout << "\n | Detalhes da Consulta |_________________________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |                | Doenca :: " << cid.getDescricao();
+        std::cout << "\n |                | Medicamento :: " << medicamento.getDescricao();
+        std::cout << "\n |                | Preco do medicamento :: " << medicamento.getPrecoUnitario();
+        std::cout << "\n |                | Quantidade receitada :: " << consulta->getQuantidadeMedicamento();
+        std::cout << "\n |                | Valor total :: " << medicamento.getPrecoUnitario() * consulta->getQuantidadeMedicamento();
+        std::cout << "\n |========================================================================|";
+    } else {
+        std::cout << "\n |                |  Nao existem registros...                             |";
+    }
+
+    std::cout << "\n |________________________________________________________________________|";
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
+    std::cin.ignore();
+}
+void consultaGateway(std::vector<Consulta> *listaDeConsultas, std::vector<Paciente> *listaDePacientes, std::vector<CID> *listaDeCIDS,
+                     std::vector<Medicamento> *listaDeMedicamentos, std::vector<Medico> *listaDeMedicos, std::vector<EspecialidadeMedica> *listaDeEspecialidades, std::vector<Cidade> *listadeCidades) {
+    int opcao = 1;
+    while (opcao > 0 && opcao < 5) {
+        mostrarTelaConsulta();
+        std::cin >> opcao;
+        std::cin.ignore();
+        if (opcao == 1) {
+            cadastrarConsulta(listaDeConsultas, listaDePacientes, listaDeCIDS, listaDeEspecialidades, listaDeMedicamentos, listaDeMedicos, listadeCidades);
+        }
+        if (opcao == 2) {
+            listarConsultas(*listaDeConsultas, *listaDePacientes, *listaDeCIDS,
+                            *listaDeMedicamentos, *listaDeMedicos, *listaDeEspecialidades);
+        }
+        if (opcao == 3) {
+            buscarConsulta(*listaDeConsultas, *listaDePacientes, *listaDeCIDS,
+                           *listaDeMedicamentos, *listaDeMedicos, *listaDeEspecialidades);
+        }
+    }
+};
+void totalizarValoresDeConsulta(std::vector<Consulta> listaDeConsultas, std::vector<Paciente> listaDePacientes, std::vector<CID> listaDeCIDS,
+                    std::vector<Medicamento> listaDeMedicamentos, std::vector<Medico> listaDeMedicos, std::vector<EspecialidadeMedica> listaDeEspecialidades) {
+    std::string outSeq;
+    int codigoConsulta;
+    float valorTotalArrecadado = 0.0;
+
+    std::cout << "\n  ___________";
+    std::cout << "\n | Consultas |____________________________________________________________";
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |     Buscar     |                                                       |";
+    std::cout << "\n |================| Informe o codigo da consulta                          |";
+    std::cout << "\n |                | ==> ";
+    std::cin >> codigoConsulta;
+    std::cin.ignore();
+
+    std::optional<Consulta> consulta = Buscas<Consulta>().buscarPorCodigo(listaDeConsultas, codigoConsulta);
+
+    if (consulta.has_value()) {
+        Paciente paciente = Buscas<Paciente>().buscarPorCodigo(
+                listaDePacientes, consulta->getCpfPaciente()
+        ).value();
+        CID cid = Buscas<CID>().buscarPorCodigo(
+                listaDeCIDS, consulta->getCodigoDoenca()
+        ).value();
+        Medicamento medicamento = Buscas<Medicamento>().buscarPorCodigo(
+                listaDeMedicamentos, consulta->getCodigoMedicamento()
+        ).value();
+        Medico medico = Buscas<Medico>().buscarPorCodigo(
+                listaDeMedicos, consulta->getCodigoMedico()
+        ).value();
+        EspecialidadeMedica especialidadeMedica = Buscas<EspecialidadeMedica>().buscarPorCodigo(
+                listaDeEspecialidades, medico.getCodigoEspecialidade()
+        ).value();
+
+        std::cout << "\n\n  __________";
+        std::cout << "\n | Consulta |_____________________________________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |                | Data :: " << consulta->getData();
+        std::cout << "\n |                | Horario :: " << consulta->getHorario();
+        std::cout << "\n  _________________________________";
+        std::cout << "\n | Detalhes economicos da Consulta |______________________________________";
+        std::cout << "\n |========================================================================|";
+        std::cout << "\n |                | Medicamento :: " << medicamento.getDescricao();
+        std::cout << "\n |                | Preco do medicamento :: " << medicamento.getPrecoUnitario();
+        std::cout << "\n |                | Quantidade receitada :: " << consulta->getQuantidadeMedicamento();
+        std::cout << "\n |                | Valor da Consulta :: R$" << 100;
+        std::cout << "\n |                | Valor total :: " << medicamento.getPrecoUnitario() * (float) consulta->getQuantidadeMedicamento() + 100;
+        std::cout << "\n |========================================================================|";
+        valorTotalArrecadado += medicamento.getPrecoUnitario() * (float) consulta->getQuantidadeMedicamento() + 100;
+    } else {
+        std::cout << "\n |                |  Nao existem registros...                             |";
+    }
+
+    std::cout << "\n |========================================================================|";
+    std::cout << "\n |                | Valor total arrecadado :: " << valorTotalArrecadado;
+
+    std::cout << "\n |________________________________________________________________________|";
+    std::cout << "\n\n [ digite qualquer coisa para continuar ] ==> ";
+    std::cin >> outSeq;
+    std::cin.ignore();
+}
+// C O N S U L T A ===================================================
